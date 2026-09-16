@@ -18,6 +18,10 @@ export default function Home() {
           My first Next.js app is live. Small page, big beginning.
         </p>
 
+        <p className="mt-6 inline-flex rounded-lg bg-[#172135] px-4 py-2 text-sm font-bold tracking-wide text-white">
+          Built by Anthony Qi
+        </p>
+
         <div className="mt-10 flex items-center gap-3 text-sm font-semibold text-[#485269]">
           <span className="h-3 w-3 animate-pulse rounded-full bg-[#06d6a0] ring-4 ring-[#06d6a0]/20" />
           Deployed with Vercel
