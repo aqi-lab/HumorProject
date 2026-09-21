@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#fffaf0] px-6 py-12 text-[#172135]">
@@ -21,6 +23,15 @@ export default function Home() {
         <p className="mt-6 inline-flex rounded-lg bg-[#172135] px-4 py-2 text-sm font-bold tracking-wide text-white">
           Built by Anthony Qi
         </p>
+
+        <div className="mt-8">
+          <Link
+            href="/jokes"
+            className="inline-flex rounded-xl border-2 border-[#172135] bg-[#ffd166] px-5 py-3 text-base font-black shadow-[4px_4px_0_#172135] transition-transform hover:-translate-y-1"
+          >
+            See Week 2 jokes →
+          </Link>
+        </div>
 
         <div className="mt-10 flex items-center gap-3 text-sm font-semibold text-[#485269]">
           <span className="h-3 w-3 animate-pulse rounded-full bg-[#06d6a0] ring-4 ring-[#06d6a0]/20" />
