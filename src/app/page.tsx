@@ -43,6 +43,9 @@ export default function Home() {
           <span className="h-3 w-3 animate-pulse rounded-full bg-[#06d6a0] ring-4 ring-[#06d6a0]/20" />
           Deployed with Vercel
         </div>
+        <Link href="/privacy" className="mt-6 inline-block text-sm font-semibold underline underline-offset-4">
+          Privacy
+        </Link>
       </section>
     </main>
   );
