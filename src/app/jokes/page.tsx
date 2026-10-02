@@ -22,9 +22,10 @@ export default async function JokesPage() {
   return (
     <main className="min-h-screen bg-[#fffaf0] px-6 py-12 text-[#172135] sm:py-16">
       <div className="mx-auto max-w-5xl">
-        <Link href="/" className="text-sm font-bold underline underline-offset-4">
-          ← Back to Hello World
-        </Link>
+        <nav className="flex flex-wrap items-center justify-between gap-4 text-sm font-bold">
+          <Link href="/" className="underline underline-offset-4">← Back to Hello World</Link>
+          <Link href="/members" className="underline underline-offset-4">Members page →</Link>
+        </nav>
 
         <header className="mt-10">
           <p className="inline-flex rotate-[-2deg] rounded-full border-2 border-[#172135] bg-[#ffd166] px-4 py-2 text-sm font-bold uppercase tracking-[0.16em]">

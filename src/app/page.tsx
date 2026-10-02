@@ -24,12 +24,18 @@ export default function Home() {
           Built by Anthony Qi
         </p>
 
-        <div className="mt-8">
+        <div className="mt-8 flex flex-wrap gap-4">
           <Link
             href="/jokes"
             className="inline-flex rounded-xl border-2 border-[#172135] bg-[#ffd166] px-5 py-3 text-base font-black shadow-[4px_4px_0_#172135] transition-transform hover:-translate-y-1"
           >
             See Week 2 jokes →
+          </Link>
+          <Link
+            href="/members"
+            className="inline-flex rounded-xl border-2 border-[#172135] bg-[#58d6c7] px-5 py-3 text-base font-black shadow-[4px_4px_0_#172135] transition-transform hover:-translate-y-1"
+          >
+            Enter the members page →
           </Link>
         </div>
 
