@@ -31,9 +31,9 @@ export async function createAiCaption(scene: string, style: HumorStyle) {
     return { caption: parseCaption(choice.message.content), prompt, model };
   }
 
-  // Local development can use a personal Gemini key if one is available.
+  // A configured Gemini key takes precedence over AI Gateway in any environment.
   if (!process.env.GEMINI_API_KEY) throw new Error("AI provider is not configured");
-  const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  const model = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
   if (!/^[a-zA-Z0-9.-]+$/.test(model)) throw new Error("Invalid Gemini model configuration");
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
     method: "POST",
