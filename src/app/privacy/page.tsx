@@ -25,6 +25,16 @@ export default function PrivacyPage() {
           photo. We use this information to show your profile and personalize
           the members page.
         </p>
+        <h2 className="mt-8 text-2xl font-black">Captions and votes</h2>
+        <p className="mt-3 leading-7 text-[#485269]">
+          When you generate a caption, your scene and selected humor style are sent
+          to Vercel AI Gateway and its selected model provider (currently Google Gemini). Your scene and the generated caption are published in
+          the public feed. Please do not include private information. We save the
+          exact prompts, model name, and your account ID in a private generation
+          record. Generation attempts are recorded to enforce a daily limit.
+          Votes are associated with your account; other visitors see only the
+          aggregate score and vote count, never individual voting records.
+        </p>
         <h2 className="mt-8 text-2xl font-black">Your choices</h2>
         <p className="mt-3 leading-7 text-[#485269]">
           You can change your name and photo in the Profile section. To ask

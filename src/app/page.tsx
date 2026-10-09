@@ -1,52 +1,34 @@
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { dailyChallenge, type Caption } from "@/lib/humor";
+import { SiteHeader } from "@/components/site-header";
+import { CaptionCard } from "@/components/caption-card";
 
-export default function Home() {
-  return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#fffaf0] px-6 py-12 text-[#172135]">
-      <div className="absolute -left-20 top-[-5rem] h-72 w-72 rounded-full bg-[#ff6b6b] opacity-70 blur-3xl" />
-      <div className="absolute -right-16 bottom-[-5rem] h-80 w-80 rounded-full bg-[#58d6c7] opacity-70 blur-3xl" />
-
-      <section className="relative w-full max-w-3xl rounded-[2rem] border-4 border-[#172135] bg-white p-8 shadow-[10px_10px_0_#172135] sm:p-14">
-        <p className="mb-8 inline-flex rotate-[-2deg] rounded-full border-2 border-[#172135] bg-[#ffd166] px-4 py-2 text-sm font-bold uppercase tracking-[0.16em]">
-          Designing for GenAI · Week 1
-        </p>
-
-        <h1 className="text-balance text-6xl font-black leading-[0.92] tracking-[-0.06em] sm:text-8xl">
-          Hello,
-          <span className="block text-[#ef476f]">World!</span>
-        </h1>
-
-        <p className="mt-8 max-w-xl text-lg leading-8 text-[#485269] sm:text-xl">
-          My first Next.js app is live. Small page, big beginning.
-        </p>
-
-        <p className="mt-6 inline-flex rounded-lg bg-[#172135] px-4 py-2 text-sm font-bold tracking-wide text-white">
-          Built by Anthony Qi
-        </p>
-
-        <div className="mt-8 flex flex-wrap gap-4">
-          <Link
-            href="/jokes"
-            className="inline-flex rounded-xl border-2 border-[#172135] bg-[#ffd166] px-5 py-3 text-base font-black shadow-[4px_4px_0_#172135] transition-transform hover:-translate-y-1"
-          >
-            See Week 2 jokes →
-          </Link>
-          <Link
-            href="/members"
-            className="inline-flex rounded-xl border-2 border-[#172135] bg-[#58d6c7] px-5 py-3 text-base font-black shadow-[4px_4px_0_#172135] transition-transform hover:-translate-y-1"
-          >
-            Enter the members page →
-          </Link>
-        </div>
-
-        <div className="mt-10 flex items-center gap-3 text-sm font-semibold text-[#485269]">
-          <span className="h-3 w-3 animate-pulse rounded-full bg-[#06d6a0] ring-4 ring-[#06d6a0]/20" />
-          Deployed with Vercel
-        </div>
-        <Link href="/privacy" className="mt-6 inline-block text-sm font-semibold underline underline-offset-4">
-          Privacy
-        </Link>
+export const maxDuration = 60;
+export default async function Home({ searchParams }: { searchParams: Promise<{ sort?: string; page?: string }> }) {
+  const params = await searchParams;
+  const sort = ["top", "today"].includes(params.sort || "") ? params.sort! : "new";
+  const page = Math.min(1000, Math.max(0, Number.parseInt(params.page || "0", 10) || 0));
+  const challenge = dailyChallenge();
+  const supabase = await createClient();
+  const [{ data: { user } }, { data, error }] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase.rpc("caption_feed", { p_sort: sort, p_day: sort === "today" ? challenge.date : null, p_offset: page * 12 }),
+  ]);
+  const captions = (data || []) as Caption[];
+  const visible = captions.slice(0, 12);
+  const { data: votes, error: votesError } = user && visible.length ? await supabase.from("caption_votes").select("caption_id,value").eq("user_id", user.id).in("caption_id", visible.map(c => c.id)) : { data: [], error: null };
+  const myVotes = new Map(votes?.map(v => [v.caption_id, v.value]));
+  return <div className="ny-app"><SiteHeader signedIn={!!user}/>
+    <main className="feed-main">
+      <section className="hero"><div className="hero-copy"><p className="eyebrow"><span className="live-dot"/> CAMPUS LORE. CITY CHAOS. QUESTIONABLE TAKES.</p><h1>Big city.<br/>Small <span>punchlines.</span></h1><p className="hero-description">For the moments that belong in the group chat.<br/>You set the scene. AI writes the caption. We judge.</p><Link href="/create" className="primary-button">Make something funny <span aria-hidden>↗</span></Link><span className="hero-footnote">Made for the chronically online, uptown edition.</span></div>
+      <aside className="daily-card"><div className="daily-top"><span>THE DAILY PROMPT</span><span aria-hidden>✳</span></div><p className="daily-date">{new Date(`${challenge.date}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" })} / NEW YORK, NY</p><h2>{challenge.scene}</h2><div className="daily-bottom"><span>Same scene.<br/>A different kind of funny.</span><Link href="/create?daily=1" aria-label="Try today's prompt">↗</Link></div><p className="daily-reset">A new prompt every midnight, NYC time.</p></aside></section>
+      <section className="feed-section" aria-labelledby="feed-heading"><div className="feed-heading"><div><p className="eyebrow">THE PUBLIC GROUP CHAT</p><h2 id="feed-heading">The city has jokes.</h2></div><nav className="feed-tabs" aria-label="Sort captions">{[["new", "Fresh"], ["top", "Top rated"], ["today", "Today’s prompt"]].map(([key, label]) => <Link key={key} href={`/?sort=${key}#feed-heading`} aria-current={sort === key ? "page" : undefined}>{label}</Link>)}</nav></div>
+      <div className="feed-note"><span>AI writes them. You decide what lands.</span><span>↑ Funny &nbsp; / &nbsp; ↓ Miss</span></div>
+      {votesError && <p role="alert" className="form-status">Your saved votes couldn’t be loaded. Refresh before voting again.</p>}
+      {error ? <div className="empty-state" role="alert"><span aria-hidden>↻</span><h3>The feed is taking a breather.</h3><p>We couldn’t load the captions. Please try again in a moment.</p><Link href="/" className="secondary-button">Try again</Link></div> : visible.length ? <div className="caption-grid">{visible.map((caption, i) => <CaptionCard key={caption.id} caption={caption} signedIn={!!user} myVote={myVotes.get(caption.id)} index={i}/>)}</div> : <div className="empty-state"><span aria-hidden>✳</span><h3>{sort === "today" ? "Today’s scene needs a punchline." : "Every good group chat starts somewhere."}</h3><p>Be the first to turn a little city chaos into a caption.</p><Link href={sort === "today" ? "/create?daily=1" : "/create"} className="secondary-button">Start the conversation ↗</Link></div>}
+      <nav aria-label="Feed pages" className="pagination">{page > 0 && <Link href={`/?sort=${sort}&page=${page - 1}#feed-heading`}>← Previous</Link>}{captions.length > 12 && <Link href={`/?sort=${sort}&page=${page + 1}#feed-heading`}>More captions →</Link>}</nav>
       </section>
-    </main>
-  );
+    </main><footer className="site-footer"><span>ONLY IN NEW YORK. <span className="footer-credit">A humor project by Anthony Qi</span></span><div><Link href="/jokes">The original jokes</Link><Link href="/privacy">Privacy</Link></div></footer>
+  </div>;
 }

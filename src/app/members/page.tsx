@@ -44,7 +44,7 @@ export default async function MembersPage() {
           {error && <p role="alert" className="mt-5 text-[#9b2643]">Your profile could not be loaded right now.</p>}
           <div className="mt-9 flex flex-wrap gap-4">
             <Link href="/profile" className="rounded-xl border-2 border-[#172135] bg-[#ffd166] px-5 py-3 font-black shadow-[4px_4px_0_#172135]">Edit your profile →</Link>
-            <Link href="/jokes" className="rounded-xl border-2 border-[#172135] bg-white px-5 py-3 font-black">Read the jokes</Link>
+            <Link href="/" className="rounded-xl border-2 border-[#172135] bg-white px-5 py-3 font-black">Rate the captions</Link>
           </div>
         </section>
       </div>

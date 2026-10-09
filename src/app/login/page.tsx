@@ -10,13 +10,13 @@ export const metadata = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; next?: string }>;
 }) {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
-  if (data?.claims) redirect("/members");
+  if (data?.claims) redirect((await searchParams).next === "create" ? "/create" : "/members");
 
-  const { error } = await searchParams;
+  const { error, next } = await searchParams;
 
   return (
     <main className="min-h-screen bg-[#fffaf0] px-6 py-16 text-[#172135]">
@@ -30,7 +30,7 @@ export default async function LoginPage({
           </p>
           <h1 className="mt-7 text-5xl font-black tracking-[-0.06em]">Come on in.</h1>
           <p className="mt-4 text-lg leading-7 text-[#485269]">
-            Sign in with Google to see the members page and make your profile your own.
+            Sign in with Google to generate captions, vote on what lands, and make your profile your own.
           </p>
           {error && (
             <p role="alert" className="mt-6 rounded-xl bg-[#ffe3e8] p-4 font-semibold text-[#9b2643]">
@@ -38,6 +38,7 @@ export default async function LoginPage({
             </p>
           )}
           <form action={signInWithGoogle} className="mt-8">
+            <input type="hidden" name="next" value={next === "create" ? "create" : "members"} />
             <button className="w-full rounded-xl border-2 border-[#172135] bg-[#ffd166] px-5 py-4 text-lg font-black shadow-[4px_4px_0_#172135] transition-transform hover:-translate-y-1">
               Continue with Google →
             </button>

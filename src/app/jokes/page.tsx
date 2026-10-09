@@ -23,7 +23,7 @@ export default async function JokesPage() {
     <main className="min-h-screen bg-[#fffaf0] px-6 py-12 text-[#172135] sm:py-16">
       <div className="mx-auto max-w-5xl">
         <nav className="flex flex-wrap items-center justify-between gap-4 text-sm font-bold">
-          <Link href="/" className="underline underline-offset-4">← Back to Hello World</Link>
+          <Link href="/" className="underline underline-offset-4">← Back to the feed</Link>
           <Link href="/members" className="underline underline-offset-4">Members page →</Link>
         </nav>
 
