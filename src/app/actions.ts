@@ -18,6 +18,7 @@ export async function vote(_previous: ActionState, formData: FormData): Promise<
   }, { onConflict: "caption_id,user_id" });
   if (error) return { error: "Your vote couldn’t be saved. Please try again." };
   revalidatePath("/");
+  revalidatePath("/collection");
   revalidatePath(`/caption/${captionId}`);
   return { success: value === "1" ? "Voted funny. You can change your vote." : "Voted miss. You can change your vote." };
 }

@@ -3,13 +3,14 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { signInDestination } from "@/lib/navigation";
 
 export async function signInWithGoogle(formData: FormData) {
   const origin = (await headers()).get("origin");
   if (!origin) redirect("/login?error=origin");
 
   const requestedNext = formData.get("next");
-  const next = requestedNext === "create" ? "/create" : "/members";
+  const next = signInDestination(requestedNext);
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",

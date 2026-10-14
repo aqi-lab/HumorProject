@@ -49,3 +49,9 @@ The home page is now a public feed of AI-written captions. Signed-in users can u
 3. Build with Node 22 or later, then deploy. Test `/` signed out, `/create` signed in, one generation, both vote choices, prompt visibility on your own caption page, and the shared link in an incognito window. Verify Vercel project **Deployment Protection** has “Require Log In” off for public access, and submit the unique deployment URL for the commit.
 
 A failed AI request still consumes one attempt, which prevents repeated abusive calls. The scene is public; users should leave out personal details. Each generation is capped at one caption and a short input.
+
+## Week 5: simpler creation and a reason to return
+
+Feedback showed that choosing a caption “flavor” made the studio less intuitive. The studio now asks for just a scene; it uses a consistent writing style behind the scenes. Signed-in users can revisit captions they created and captions they voted Funny on from **My collection**. Voting and sharing remain available on each card. A sign-in started from a caption or the daily prompt returns to that same place afterward. These changes use the existing Week 4 tables and policies; no new SQL is required.
+
+Before submitting, verify the public deployment in a private window and use its commit-specific Vercel URL. Test sign-in, one generation, Funny and Miss voting, the collection, and a public caption link. Vercel Deployment Protection must allow public access for the assignment.

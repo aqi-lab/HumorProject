@@ -42,5 +42,6 @@ export async function generateCaption(_previous: ActionState, formData: FormData
     return { error: "Your caption couldn’t be generated and saved. Please try again. This attempt counts toward the daily limit." };
   }
   revalidatePath("/");
+  revalidatePath("/collection");
   redirect(`/caption/${captionId}`);
 }
