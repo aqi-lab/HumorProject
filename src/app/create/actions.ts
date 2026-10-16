@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { dailyChallenge, systemPrompt, validateGeneration, type ActionState } from "@/lib/humor";
+import { dailyChallenge, systemPrompt, uuidPattern, validateGeneration, type ActionState } from "@/lib/humor";
 import { createAiCaption } from "@/lib/generation";
 
 export async function generateCaption(_previous: ActionState, formData: FormData): Promise<ActionState> {
@@ -13,6 +13,16 @@ export async function generateCaption(_previous: ActionState, formData: FormData
   if (authError || !user) return { error: "Please sign in again to create a caption." };
   const input = validateGeneration(formData.get("scene"), formData.get("style"));
   if ("error" in input) return { error: input.error };
+  const remixValue = formData.get("remix_id");
+  const remixId = typeof remixValue === "string" && uuidPattern.test(remixValue) ? remixValue : null;
+  if (remixValue && !remixId) return { error: "That remix link is invalid. Open the original caption and try again." };
+  let originalCaption: string | undefined;
+  if (remixId) {
+    const { data: original, error } = await supabase.from("captions").select("scene,caption").eq("id", remixId).maybeSingle();
+    if (error || !original) return { error: "The original caption is unavailable. Choose another one to remix." };
+    if (input.scene !== original.scene) return { error: "Keep the original scene for a remix, or start a new caption instead." };
+    originalCaption = original.caption;
+  }
   if ((!process.env.GEMINI_API_KEY && !process.env.AI_GATEWAY_API_KEY && !process.env.VERCEL_OIDC_TOKEN) || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return { error: "The caption studio is not ready yet. Please try again later." };
   }
@@ -28,7 +38,7 @@ export async function generateCaption(_previous: ActionState, formData: FormData
 
   let captionId: string;
   try {
-    const { caption, prompt, model } = await createAiCaption(input.scene, input.style);
+    const { caption, prompt, model } = await createAiCaption(input.scene, input.style, originalCaption);
     const challenge = dailyChallenge();
     const { data, error } = await admin.rpc("publish_generation", {
       p_request_id: requestId, p_user_id: user.id, p_scene: input.scene, p_style: input.style,
@@ -43,5 +53,5 @@ export async function generateCaption(_previous: ActionState, formData: FormData
   }
   revalidatePath("/");
   revalidatePath("/collection");
-  redirect(`/caption/${captionId}`);
+  redirect(`/caption/${captionId}${remixId ? `?compare=${remixId}` : ""}`);
 }

@@ -26,6 +26,8 @@ export default async function LoginPage({
           <p className="eyebrow">YOUR SEAT IN THE GROUP CHAT</p>
           <h1>Come on in<span className="brand-period">.</span></h1>
           <p>Sign in with Google to make captions, vote on what lands, and keep the best ones in your collection.</p>
+          {destination.startsWith("/create?remix=") && <p className="login-context">You’ll return to the original scene, ready to generate your remix.</p>}
+          {destination.includes("?compare=") && <p className="login-context">You’ll return to both captions so you can vote after signing in.</p>}
           {error && (
             <p role="alert" className="form-status">
               Sign in didn’t finish. Please try again.

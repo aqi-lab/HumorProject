@@ -55,3 +55,7 @@ A failed AI request still consumes one attempt, which prevents repeated abusive 
 Feedback showed that choosing a caption “flavor” made the studio less intuitive. The studio now asks for just a scene; it uses a consistent writing style behind the scenes. Signed-in users can revisit captions they created and captions they voted Funny on from **My collection**. Voting and sharing remain available on each card. A sign-in started from a caption or the daily prompt returns to that same place afterward. These changes use the existing Week 4 tables and policies; no new SQL is required.
 
 Before submitting, verify the public deployment in a private window and use its commit-specific Vercel URL. Test sign-in, one generation, Funny and Miss voting, the collection, and a public caption link. Vercel Deployment Protection must allow public access for the assignment.
+
+## Remix a scene
+
+Every caption has a **Remix this scene** link. It opens the studio with that caption's scene fixed in place and shows the original punchline for reference. Generating a remix asks the AI for a different punchline, publishes it to the feed, and opens a shareable comparison page where both captions can be voted on. The existing generation limit and authentication rules apply. This feature uses the Week 4 schema without a new migration.

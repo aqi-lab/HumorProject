@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { refresh, revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { uuidPattern, type ActionState } from "@/lib/humor";
 
@@ -20,5 +20,7 @@ export async function vote(_previous: ActionState, formData: FormData): Promise<
   revalidatePath("/");
   revalidatePath("/collection");
   revalidatePath(`/caption/${captionId}`);
+  // A comparison can be open at another caption's URL; refresh both visible scores.
+  refresh();
   return { success: value === "1" ? "Voted funny. You can change your vote." : "Voted miss. You can change your vote." };
 }

@@ -2,8 +2,8 @@ import "server-only";
 import { generationPrompt, parseCaption, systemPrompt, type HumorStyle } from "@/lib/humor";
 
 /** Vercel supplies OIDC automatically in deployments. A provider key is optional for local use. */
-export async function createAiCaption(scene: string, style: HumorStyle) {
-  const prompt = generationPrompt(scene, style);
+export async function createAiCaption(scene: string, style: HumorStyle, existingCaption?: string) {
+  const prompt = generationPrompt(scene, style, existingCaption);
   const gatewayToken = process.env.GEMINI_API_KEY ? undefined : (process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN);
   if (gatewayToken) {
     const model = process.env.AI_GATEWAY_MODEL || "google/gemini-2.5-flash-lite";
