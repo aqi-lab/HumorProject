@@ -56,6 +56,22 @@ Feedback showed that choosing a caption “flavor” made the studio less intuit
 
 Before submitting, verify the public deployment in a private window and use its commit-specific Vercel URL. Test sign-in, one generation, Funny and Miss voting, the collection, and a public caption link. Vercel Deployment Protection must allow public access for the assignment.
 
-## Remix a scene
+## Photo captions, caption instructions, and AI fallback
 
-Every caption has a **Remix this scene** link. It opens the studio with that caption's scene fixed in place and shows the original punchline for reference. Generating a remix asks the AI for a different punchline, publishes it to the feed, and opens a shareable comparison page where both captions can be voted on. The existing generation limit and authentication rules apply. This feature uses the Week 4 schema without a new migration.
+The studio has two paths: upload a JPG/PNG/WebP photo under 3 MB, or describe an image in text. Both paths ask what the caption should be like. A photo is decoded, resized, and re-encoded without EXIF metadata before AI processing or storage. Photos, descriptions, caption instructions and the AI caption are public after publishing. The full system prompt, provider/model and account identity remain private.
+
+Run `node --env-file=.env.local scripts/setup-photo-storage.mjs` once against the existing Supabase project. It creates a private `caption-photos` bucket using the server service role. Browser clients have no direct upload/list permission. Published caption pages receive expiring image URLs. The structured JSON prompt record stores the opaque photo reference and public caption instructions; the server exposes only these approved public fields. Existing captions need no migration.
+
+Configure `GROQ_API_KEY` in local and Vercel Production environments. Set `AI_PRIMARY_PROVIDER=groq` to use the verified Groq models first. The app falls back through other configured providers (Gemini, OpenRouter, Vercel AI Gateway), including a secondary Gemini model. Without this setting, Gemini is tried first. It supports both text and vision. Each provider has an 8-second timeout; fallback remains within the same daily generation reservation. Invalid output, network failures, provider errors, and quotas trigger fallback. Content safety refusals stop immediately. The saved model identifies the provider that actually succeeded. A free provider can still reach its own quota; the app explains when all configured options fail.
+
+Optional settings are listed in `.env.example`. Provider credentials stay server-only. Vercel OIDC requires active AI Gateway credit to work.
+
+### Disable or remove prompt reuse
+
+The old Remix comparison flow has been removed. **Reuse prompt** now copies the public image/photo and caption instructions into editable fields. It never uses the original AI caption as a new writing instruction and never reveals another user's private generation record.
+
+Set `NEXT_PUBLIC_ENABLE_REMIX=false` in Vercel and redeploy to hide the link and reject reuse requests. Old reuse links lead to the ordinary studio. The single switch and URL helper live in `src/features/reuse-prompt.ts`; normal creation, photo storage, AI fallback, votes and collections do not depend on reuse. Existing captions and photos remain available when it is off.
+
+### Verification
+
+Use Node 22.18+ or 24 for `npm test`, `npm run lint`, and `npm run build`. Tests cover provider quota/network/invalid-response fallback, refusal handling, photo validation and metadata stripping, public prompt-field boundaries, and the feature switch. A live provider check is available with `node --env-file=.env.local --import ./tests/register.mjs scripts/check-ai.mjs`; it makes a few real text/photo requests without publishing posts.

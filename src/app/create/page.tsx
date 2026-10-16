@@ -1,24 +1,37 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { dailyChallenge, uuidPattern } from "@/lib/humor";
+import { dailyChallenge, uuidPattern, type Caption } from "@/lib/humor";
+import { withCaptionMedia } from "@/lib/caption-media";
+import { reusePromptEnabled, reusePromptPath } from "@/features/reuse-prompt";
 import { SiteHeader } from "@/components/site-header";
 import { GenerationForm } from "./generation-form";
 
 export const metadata = { title: "Caption studio | Only in New York" };
 export const maxDuration = 60;
 export default async function CreatePage({ searchParams }: { searchParams: Promise<{ daily?: string; remix?: string }> }) {
-  const supabase = await createClient();
   const { daily, remix } = await searchParams;
-  const remixId = typeof remix === "string" && uuidPattern.test(remix) ? remix : null;
-  if (remix && !remixId) notFound();
+  if (remix && !reusePromptEnabled) redirect("/create");
+  const sourceId = typeof remix === "string" && uuidPattern.test(remix) ? remix : undefined;
+  if (remix && !sourceId) notFound();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect(`/login?next=${encodeURIComponent(remixId ? `/create?remix=${remixId}` : daily === "1" ? "/create?daily=1" : "/create")}`);
+  if (!user) redirect(`/login?next=${encodeURIComponent(sourceId ? reusePromptPath(sourceId) : daily === "1" ? "/create?daily=1" : "/create")}`);
   const challenge = dailyChallenge();
-  const { data: original, error } = remixId
-    ? await supabase.from("captions").select("scene,caption").eq("id", remixId).maybeSingle()
-    : { data: null, error: null };
-  if (remixId && !error && !original) notFound();
-  if (error) return <div className="ny-app"><SiteHeader signedIn/><main className="caption-detail"><div className="empty-state" role="alert"><h1>The original caption couldn’t load.</h1><p>Try again in a moment, or choose another scene from the feed.</p><Link href={`/create?remix=${remixId}`} className="secondary-button">Try again</Link> <Link href="/" className="secondary-button">Browse captions</Link></div></main></div>;
-  return <div className="ny-app"><SiteHeader signedIn/><main className="studio-layout"><div className="studio-intro"><p className="eyebrow">THE CAPTION STUDIO</p><h1>{remixId ? <>Same scene.<br/>Your punchline.</> : <>Your life.<br/>AI’s punchline.</>}</h1><p>{remixId ? "Use this scene to create a different AI punchline. After it’s published, compare both captions and vote for what lands." : "Turn your everyday city chaos into something the group chat would actually laugh at."}</p>{remixId && original ? <aside className="remix-original"><span>THE ORIGINAL CAPTION</span><p>“{original.caption}”</p><Link href={`/caption/${remixId}`}>View original ↗</Link></aside> : <aside className="studio-aside"><span>THE BRIEF</span><p>Specific beats generic.<br/>A little weird beats a little safe.<br/>Let the city do the setup.</p></aside>}</div><GenerationForm key={remixId || daily || "new"} dailyScene={challenge.scene} initialScene={original?.scene || (daily === "1" ? challenge.scene : "")} remixId={remixId}/></main></div>;
+  let source: Caption | undefined;
+  if (sourceId) {
+    const { data, error } = await supabase.rpc("caption_feed", { p_id: sourceId });
+    if (error) throw new Error("The source caption could not be loaded. Please try again.");
+    const [caption] = (data || []) as Caption[];
+    if (!caption) notFound();
+    [source] = await withCaptionMedia([caption]);
+  }
+  return <div className="ny-app"><SiteHeader signedIn/><main className="studio-layout">
+    <div className="studio-intro"><p className="eyebrow">THE CAPTION STUDIO</p><h1>{source ? <>Their idea.<br/>Your take.</> : <>Your image.<br/>AI’s punchline.</>}</h1>
+      <p>{source ? "We copied the public image description and caption instructions. Edit them below, then generate your own caption." : "Upload a photo or describe an image. Tell the AI what you want the caption to say, then let it write the punchline."}</p>
+      <ol className="studio-steps"><li><span>1</span>Upload a photo or describe an image.</li><li><span>2</span>Tell the AI what kind of caption you want.</li><li><span>3</span>Generate, share, and see how people vote.</li></ol>
+      {source && <Link href={`/caption/${source.id}`} className="back-link">View the source caption ↗</Link>}
+    </div>
+    <GenerationForm key={sourceId || daily || "new"} dailyScene={challenge.scene} initialScene={source ? source.input_scene ?? source.scene : daily === "1" ? challenge.scene : ""} initialDirection={source?.caption_instructions || ""} initialPhotoUrl={source?.photo_url} sourceId={sourceId}/>
+  </main></div>;
 }

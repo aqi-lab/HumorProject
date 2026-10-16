@@ -4,6 +4,7 @@ import { SiteHeader } from "@/components/site-header";
 import { CaptionCard } from "@/components/caption-card";
 import { createClient } from "@/lib/supabase/server";
 import { type Caption } from "@/lib/humor";
+import { withCaptionMedia } from "@/lib/caption-media";
 
 export const metadata = { title: "My collection | Only in New York" };
 
@@ -22,7 +23,7 @@ export default async function CollectionPage({ searchParams }: { searchParams: P
   const ids = (rows || []).slice(0, 12).map(row => row.caption_id);
   // The feed RPC is the public source of truth for live aggregate scores.
   const captionResults = await Promise.all(ids.map(id => supabase.rpc("caption_feed", { p_id: id })));
-  const captions = captionResults.map(result => (result.data as Caption[] | null)?.[0]).filter((caption): caption is Caption => Boolean(caption));
+  const captions = await withCaptionMedia(captionResults.map(result => (result.data as Caption[] | null)?.[0]).filter((caption): caption is Caption => Boolean(caption)));
   const { data: votes, error: votesError } = captions.length
     ? await supabase.from("caption_votes").select("caption_id,value").eq("user_id", user.id).in("caption_id", captions.map(caption => caption.id))
     : { data: [], error: null };
