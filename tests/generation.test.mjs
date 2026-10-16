@@ -34,6 +34,21 @@ test("photo fallbacks send image data to a vision model and preserve context", a
   assert.equal(result.scene, "A pigeon guards a wooden bench outside a library.");
 });
 
+test("Groq request rejection uses Cloudflare vision before unavailable Gemini backups", async () => {
+  const calls = [];
+  const env = { ...keys, AI_PRIMARY_PROVIDER: "groq", CLOUDFLARE_ACCOUNT_ID: "a".repeat(32), CLOUDFLARE_API_TOKEN: "test-cf" };
+  const result = await generateWithFallback({ ...input, photo: { mimeType: "image/webp", data: "cGhvdG8=" } }, { env, fetcher: async (url, options) => {
+    calls.push({ url, body: JSON.parse(options.body) });
+    if (calls.length === 1) return Response.json({ error: { code: "json_validate_failed", message: "Failed to generate JSON" } }, { status: 400 });
+    return success("A pigeon guards a wooden bench outside a library.");
+  } });
+  assert.equal(calls.length, 2); assert.match(calls[1].url, /api.cloudflare.com/);
+  assert.match(calls[1].body.model, /llama-4-scout/);
+  assert.match(calls[1].body.messages[1].content[1].image_url.url, /^data:image\/webp;base64,/);
+  assert.equal(calls[1].body.response_format.type, "json_schema");
+  assert.match(result.model, /^Cloudflare/);
+});
+
 test("safety refusals stop instead of trying to bypass another provider", async () => {
   let calls = 0;
   await assert.rejects(generateWithFallback(input, { env: keys, fetcher: async () => {

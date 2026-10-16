@@ -33,6 +33,15 @@ test("a text-only response never counts as a generated image", async () => {
   await assert.rejects(generateImage(scene, { env: { GEMINI_API_KEY: "test" }, fetcher: async () => Response.json({ candidates: [{ content: { parts: [{ text: "Here is your image" }] } }] }) }), error => error.kind === "unavailable");
 });
 
+test("a transient Cloudflare image outage retries once, while quota failures do not repeat", async () => {
+  let calls = 0;
+  const result = await generateImage(scene, { env, fetcher: async () => {
+    if (++calls === 1) return Response.json({ errors: [{ message: "Upstream unavailable" }] }, { status: 503 });
+    return Response.json({ success: true, result: { image: "aW1hZ2U=" } });
+  } });
+  assert.equal(calls, 2); assert.match(result.model, /^Cloudflare/);
+});
+
 test("no image configuration or exhausted image quotas fail explicitly", async () => {
   assert.equal(imageProviderPlan({ GROQ_API_KEY: "text-only" }).length, 0);
   await assert.rejects(generateImage(scene, { env: {} }), error => error instanceof ImageGenerationError && error.kind === "not_configured");

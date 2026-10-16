@@ -29,7 +29,7 @@ export default function PrivacyPage() {
         <p className="mt-3 leading-7 text-[#485269]">
           When you generate a caption, your photo or image description and caption
           instructions are sent to an AI provider. Described images may be generated
-          by Cloudflare Workers AI or Google Gemini before captioning. The app uses Google Gemini and
+          by Cloudflare Workers AI or Google Gemini before captioning. The app uses Cloudflare Workers AI, Google Gemini and
           may automatically try configured backups such as Groq, OpenRouter, or
           Vercel AI Gateway if a provider is busy or unavailable. Your photo,
           image description, caption instructions, and generated caption are published in
