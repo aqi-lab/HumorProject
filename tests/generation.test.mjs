@@ -39,7 +39,7 @@ test("Groq request rejection uses Cloudflare vision before unavailable Gemini ba
   const env = { ...keys, AI_PRIMARY_PROVIDER: "groq", CLOUDFLARE_ACCOUNT_ID: "a".repeat(32), CLOUDFLARE_API_TOKEN: "test-cf" };
   const result = await generateWithFallback({ ...input, photo: { mimeType: "image/webp", data: "cGhvdG8=" } }, { env, fetcher: async (url, options) => {
     calls.push({ url, body: JSON.parse(options.body) });
-    if (calls.length === 1) return Response.json({ error: { code: "json_validate_failed", message: "Failed to generate JSON" } }, { status: 400 });
+    if (calls.length === 1) return Response.json({ error: { code: "request_failed", message: "Request unavailable" } }, { status: 400 });
     return success("A pigeon guards a wooden bench outside a library.");
   } });
   assert.equal(calls.length, 2); assert.match(calls[1].url, /api.cloudflare.com/);
@@ -47,6 +47,16 @@ test("Groq request rejection uses Cloudflare vision before unavailable Gemini ba
   assert.match(calls[1].body.messages[1].content[1].image_url.url, /^data:image\/webp;base64,/);
   assert.equal(calls[1].body.response_format.type, "json_schema");
   assert.match(result.model, /^Cloudflare/);
+});
+
+test("Groq JSON validation failures retry once without provider formatting, then still validate locally", async () => {
+  const calls = [];
+  const result = await generateWithFallback(input, { env: { GROQ_API_KEY: "test" }, fetcher: async (url, options) => {
+    calls.push(JSON.parse(options.body));
+    return calls.length === 1 ? Response.json({ error: { code: "json_validate_failed" } }, { status: 400 }) : success();
+  } });
+  assert.equal(calls.length, 2); assert.ok(calls[0].response_format); assert.equal(calls[1].response_format, undefined); assert.ok(result.caption);
+  await assert.rejects(generateWithFallback(input, { env: { GROQ_API_KEY: "test" }, fetcher: async () => Response.json({ choices: [{ finish_reason: "stop", message: {content:"not JSON"} }] }) }));
 });
 
 test("safety refusals stop instead of trying to bypass another provider", async () => {

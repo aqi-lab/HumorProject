@@ -8,7 +8,7 @@ import { SiteHeader } from "@/components/site-header";
 import { GenerationForm } from "./generation-form";
 
 export const metadata = { title: "Caption studio | Only in New York" };
-export const maxDuration = 120;
+export const maxDuration = 180;
 export default async function CreatePage({ searchParams }: { searchParams: Promise<{ daily?: string; remix?: string }> }) {
   const { daily, remix } = await searchParams;
   if (remix && !reusePromptEnabled) redirect("/create");

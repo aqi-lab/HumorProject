@@ -25,7 +25,7 @@ export function providerPlan(env: Env, photo: boolean): Provider[] {
   if (gatewayKey) plan.push({ name: "AI Gateway", model: env.AI_GATEWAY_MODEL || "google/gemini-2.5-flash-lite", key: gatewayKey, url: "https://ai-gateway.vercel.sh/v1/chat/completions" });
   // Try another provider before a second Gemini model, so one provider's quota cannot block the backup.
   const ordered = [...plan.filter(p => p.name === "Groq" || p.name === "Cloudflare"), ...plan.filter(p => p.gemini && p === plan[0]), ...plan.filter(p => !p.gemini && !["Groq", "Cloudflare"].includes(p.name)), ...plan.filter(p => p.gemini && p !== plan[0])];
-  const primary = env.AI_PRIMARY_PROVIDER?.toLowerCase();
+  const primary = env.AI_PRIMARY_PROVIDER?.trim().toLowerCase();
   const preferred = primary || (env.GEMINI_API_KEY ? "gemini" : "groq");
   const first = ordered.find(p => p.name.toLowerCase() === preferred);
   return [...(first ? [first] : []), ...ordered.filter(p => p !== first)].slice(0, 5);
@@ -38,10 +38,13 @@ export async function generateWithFallback(input: CaptionInput, options: { env: 
   if (!plan.length) throw new GenerationError("not_configured");
   const prompt = captionPrompt(input);
   const failures: GenerationError[] = [];
-  for (const provider of plan) {
+  const attempts = plan.flatMap(provider => provider.name === "Groq" ? [{ ...provider, plainJson: false }, { ...provider, plainJson: true }] : [{ ...provider, plainJson: false }]);
+  let retryGroqFormatting = false;
+  for (const provider of attempts) {
+    if (provider.plainJson && !retryGroqFormatting) continue;
     try {
       const response = await (options.fetcher || fetch)(provider.url, {
-        method: "POST", cache: "no-store", signal: AbortSignal.timeout(provider.name === "Cloudflare" ? 15000 : 8000),
+        method: "POST", cache: "no-store", signal: AbortSignal.timeout(provider.name === "Cloudflare" ? 25000 : 8000),
         headers: provider.gemini ? { "Content-Type": "application/json", "x-goog-api-key": provider.key } : { "Content-Type": "application/json", Authorization: `Bearer ${provider.key}` },
         body: JSON.stringify(provider.gemini ? {
           systemInstruction: { parts: [{ text: captionSystemPrompt }] },
@@ -51,7 +54,7 @@ export async function generateWithFallback(input: CaptionInput, options: { env: 
           model: provider.model, temperature: 1, max_tokens: 2048,
           ...(provider.name === "Groq" && provider.model.includes("gpt-oss") ? { reasoning_effort: "low" } : {}),
           messages: [{ role: "system", content: captionSystemPrompt }, { role: "user", content: input.photo ? [{ type: "text", text: prompt }, { type: "image_url", image_url: { url: `data:${input.photo.mimeType};base64,${input.photo.data}` } }] : prompt }],
-          response_format: provider.name === "OpenRouter" || (provider.name === "Groq" && !!input.photo) ? { type: "json_object" } : { type: "json_schema", json_schema: { name: "caption", strict: true, schema } },
+          ...(!provider.plainJson ? { response_format: provider.name === "OpenRouter" || (provider.name === "Groq" && !!input.photo) ? { type: "json_object" } : { type: "json_schema", json_schema: { name: "caption", strict: true, schema } } } : {}),
         }),
       });
       if (!response.ok) {
@@ -59,6 +62,7 @@ export async function generateWithFallback(input: CaptionInput, options: { env: 
         try { detail = await response.json(); } catch { /* Some providers return plain-text outage pages. */ }
         const code = `${detail?.error?.code || ""} ${detail?.error?.type || ""} ${detail?.error?.message || ""}`;
         if (/content_policy|content_filter|safety|prohibited|moderation/i.test(code)) throw new GenerationError("blocked", provider.name, response.status);
+        if (provider.name === "Groq" && !provider.plainJson && detail?.error?.code === "json_validate_failed") retryGroqFormatting = true;
         throw new GenerationError(response.status === 429 ? "rate_limit" : "unavailable", provider.name, response.status, detail?.error?.code);
       }
       const result = await response.json();
@@ -77,7 +81,7 @@ export async function generateWithFallback(input: CaptionInput, options: { env: 
       try { return { ...parseCaptionResult(text, input), prompt, model: `${provider.name}/${provider.model}` }; }
       catch { throw new GenerationError("invalid", provider.name); }
     } catch (error) {
-      const failure = error instanceof GenerationError ? error : new GenerationError("unavailable", provider.name);
+      const failure = error instanceof GenerationError ? error : new GenerationError("unavailable", provider.name, undefined, error instanceof Error ? error.name : undefined);
       if (failure.kind === "blocked") throw failure;
       failures.push(failure);
       options.onFailure?.(failure);
