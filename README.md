@@ -58,7 +58,11 @@ Before submitting, verify the public deployment in a private window and use its 
 
 ## Photo captions, caption instructions, and AI fallback
 
-The studio has two paths: upload a JPG/PNG/WebP photo under 3 MB, or describe an image in text. Both paths ask what the caption should be like. A photo is decoded, resized, and re-encoded without EXIF metadata before AI processing or storage. Photos, descriptions, caption instructions and the AI caption are public after publishing. The full system prompt, provider/model and account identity remain private.
+The studio has two paths: upload a JPG/PNG/WebP photo under 3 MB, or describe an image for AI to generate. Both paths ask what the caption should be like. The description path first generates a real image, then sends that image to a vision model for captioning, and publishes both together. A failed image request never publishes a caption-only post and releases its daily reservation. Images are decoded, resized, and re-encoded without EXIF metadata before captioning or storage. Images, descriptions, caption instructions and the AI caption are public after publishing. The full system prompt, provider/model and account identity remain private.
+
+For image generation, add `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` to local and Vercel Production environments. Create a Workers AI token using [Cloudflare’s REST API setup](https://developers.cloudflare.com/workers-ai/get-started/rest-api/). Cloudflare Flux.1 Schnell is tried first. If `GEMINI_API_KEY` is configured, Gemini’s image model is a backup; image generation needs its own available quota and is separate from Gemini text generation. `GEMINI_IMAGE_MODEL` optionally changes the image model. Groq supplies captions, not image generation. No automatic billing changes are made. Redeploy after changing production settings.
+
+Owners of older caption-only posts see **Generate missing image** on the caption page. It generates an image from the original description and attaches it without changing the caption or votes. This action verifies ownership on the server and uses the existing daily generation limit. No SQL migration is needed.
 
 Run `node --env-file=.env.local scripts/setup-photo-storage.mjs` once against the existing Supabase project. It creates a private `caption-photos` bucket using the server service role. Browser clients have no direct upload/list permission. Published caption pages receive expiring image URLs. The structured JSON prompt record stores the opaque photo reference and public caption instructions; the server exposes only these approved public fields. Existing captions need no migration.
 
@@ -68,10 +72,10 @@ Optional settings are listed in `.env.example`. Provider credentials stay server
 
 ### Disable or remove prompt reuse
 
-The old Remix comparison flow has been removed. **Reuse prompt** now copies the public image/photo and caption instructions into editable fields. It never uses the original AI caption as a new writing instruction and never reveals another user's private generation record.
+The old Remix comparison flow has been removed. **Reuse prompt** copies the public description and caption instructions into editable fields. For generated images, editing the description creates a new image. Uploaded photos are copied and can be replaced. It never uses the original AI caption as a new writing instruction and never reveals another user's private generation record.
 
 Set `NEXT_PUBLIC_ENABLE_REMIX=false` in Vercel and redeploy to hide the link and reject reuse requests. Old reuse links lead to the ordinary studio. The single switch and URL helper live in `src/features/reuse-prompt.ts`; normal creation, photo storage, AI fallback, votes and collections do not depend on reuse. Existing captions and photos remain available when it is off.
 
 ### Verification
 
-Use Node 22.18+ or 24 for `npm test`, `npm run lint`, and `npm run build`. Tests cover provider quota/network/invalid-response fallback, refusal handling, photo validation and metadata stripping, public prompt-field boundaries, and the feature switch. A live provider check is available with `node --env-file=.env.local --import ./tests/register.mjs scripts/check-ai.mjs`; it makes a few real text/photo requests without publishing posts.
+Use Node 22.18+ or 24 for `npm test`, `npm run lint`, and `npm run build`. Tests cover caption and image provider quota/invalid-response fallback, refusal handling, real image bytes versus text-only output, photo validation and metadata stripping, public prompt-field boundaries, and the feature switch. A live caption provider check is available with `node --env-file=.env.local --import ./tests/register.mjs scripts/check-ai.mjs`. Use `scripts/check-image.mjs` with the same flags for a real image-to-caption check. These checks do not publish posts.

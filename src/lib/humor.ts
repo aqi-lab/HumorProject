@@ -34,6 +34,7 @@ export type Caption = {
   input_scene?: string;
   caption_instructions?: string;
   source_caption_id?: string;
+  image_origin?: "uploaded" | "generated";
 };
 export type ActionState = { error?: string; success?: string };
 export const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

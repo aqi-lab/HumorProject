@@ -1,8 +1,8 @@
 import sharp from "sharp";
 import { MAX_PHOTO_BYTES, type PhotoInput } from "./caption-input";
 
-export async function normalizePhoto(file: File): Promise<{ bytes: Buffer; image: PhotoInput }> {
-  if (!file.size || file.size > MAX_PHOTO_BYTES || !["image/jpeg", "image/png", "image/webp"].includes(file.type)) throw new Error("Choose a JPG, PNG, or WebP photo under 3 MB.");
+export async function normalizePhoto(file: File, maxBytes = MAX_PHOTO_BYTES): Promise<{ bytes: Buffer; image: PhotoInput }> {
+  if (!file.size || file.size > maxBytes || !["image/jpeg", "image/png", "image/webp"].includes(file.type)) throw new Error("Choose a JPG, PNG, or WebP photo under 3 MB.");
   try {
     const source = sharp(Buffer.from(await file.arrayBuffer()), { limitInputPixels: 20000000, failOn: "error", animated: false });
     const info = await source.metadata();

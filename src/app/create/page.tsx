@@ -8,7 +8,7 @@ import { SiteHeader } from "@/components/site-header";
 import { GenerationForm } from "./generation-form";
 
 export const metadata = { title: "Caption studio | Only in New York" };
-export const maxDuration = 60;
+export const maxDuration = 120;
 export default async function CreatePage({ searchParams }: { searchParams: Promise<{ daily?: string; remix?: string }> }) {
   const { daily, remix } = await searchParams;
   if (remix && !reusePromptEnabled) redirect("/create");
@@ -28,10 +28,10 @@ export default async function CreatePage({ searchParams }: { searchParams: Promi
   }
   return <div className="ny-app"><SiteHeader signedIn/><main className="studio-layout">
     <div className="studio-intro"><p className="eyebrow">THE CAPTION STUDIO</p><h1>{source ? <>Their idea.<br/>Your take.</> : <>Your image.<br/>AI’s punchline.</>}</h1>
-      <p>{source ? "We copied the public image description and caption instructions. Edit them below, then generate your own caption." : "Upload a photo or describe an image. Tell the AI what you want the caption to say, then let it write the punchline."}</p>
-      <ol className="studio-steps"><li><span>1</span>Upload a photo or describe an image.</li><li><span>2</span>Tell the AI what kind of caption you want.</li><li><span>3</span>Generate, share, and see how people vote.</li></ol>
+      <p>{source ? "We copied the public image description and caption instructions. Edit them to generate a new image and caption, or use your own photo." : "Describe an image and AI will draw it, or upload your own photo. Then tell the AI what you want the caption to say."}</p>
+      <ol className="studio-steps"><li><span>1</span>Generate an image or upload your own.</li><li><span>2</span>Tell the AI what kind of caption you want.</li><li><span>3</span>Publish the image and caption together.</li></ol>
       {source && <Link href={`/caption/${source.id}`} className="back-link">View the source caption ↗</Link>}
     </div>
-    <GenerationForm key={sourceId || daily || "new"} dailyScene={challenge.scene} initialScene={source ? source.input_scene ?? source.scene : daily === "1" ? challenge.scene : ""} initialDirection={source?.caption_instructions || ""} initialPhotoUrl={source?.photo_url} sourceId={sourceId}/>
+    <GenerationForm key={sourceId || daily || "new"} dailyScene={challenge.scene} initialScene={source ? source.input_scene ?? source.scene : daily === "1" ? challenge.scene : ""} initialDirection={source?.caption_instructions || ""} initialPhotoUrl={source?.image_origin === "generated" ? undefined : source?.photo_url} sourceId={sourceId}/>
   </main></div>;
 }

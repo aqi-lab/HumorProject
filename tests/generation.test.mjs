@@ -56,7 +56,7 @@ test("a backup key can run the studio without Gemini and keys never enter prompt
   const plan = providerPlan({ GROQ_API_KEY: "backup" }, false);
   assert.equal(plan.length, 1); assert.equal(plan[0].name, "Groq");
   assert.equal(readPublicBrief(JSON.stringify({ ...input, system_prompt: "private", user_id: "private", caption_instructions: input.direction })).direction, input.direction);
-  assert.deepEqual(Object.keys(readPublicBrief("{}")), ["scene", "direction", "photoPath", "sourceId"]);
+  assert.deepEqual(Object.keys(readPublicBrief("{}")), ["scene", "direction", "photoPath", "sourceId", "imageOrigin"]);
   assert.equal(readPublicBrief('{"scene":"Original photo context","caption_instructions":"Make it dry."}').scene, "Original photo context");
   assert.equal(readPublicBrief('{"photo_path":"../../private.webp"}').photoPath, undefined);
   assert.equal(providerPlan({ ...keys, AI_PRIMARY_PROVIDER: "groq" }, false)[0].name, "Groq");

@@ -25,7 +25,7 @@ export function GenerationForm({ dailyScene, initialScene, initialDirection, ini
   const canSubmit = direction.trim().length >= 3 && (mode === "photo" ? !!(file || initialPhotoUrl) && !fileError : scene.trim().length >= 12);
   return <form action={action} className="studio-form" aria-busy={pending}>
     {sourceId && <p className="reuse-note">This is your editable copy. Changes won’t affect the original.</p>}
-    <fieldset disabled={pending} className="input-choice"><legend>1 / Start with an image</legend><div className="input-tabs"><button type="button" aria-pressed={mode === "scene"} onClick={() => setMode("scene")}>Describe an image</button><button type="button" aria-pressed={mode === "photo"} onClick={() => setMode("photo")}>Upload a photo</button></div></fieldset>
+    <fieldset disabled={pending} className="input-choice"><legend>1 / Start with an image</legend><div className="input-tabs"><button type="button" aria-pressed={mode === "scene"} onClick={() => setMode("scene")}>Generate an image</button><button type="button" aria-pressed={mode === "photo"} onClick={() => setMode("photo")}>Upload a photo</button></div></fieldset>
     <input type="hidden" name="input_mode" value={mode}/>
     {mode === "photo" && <div className="photo-upload">
       <label htmlFor="photo">Choose your photo</label><p id="photo-help" className="field-help">JPG, PNG, or WebP. Maximum 3 MB. The photo will be public with your caption.</p>
@@ -38,8 +38,8 @@ export function GenerationForm({ dailyScene, initialScene, initialDirection, ini
       {photoUrl && <div className="photo-preview"><Image src={photoUrl} alt="The photo the AI will caption" width={1280} height={960} unoptimized/><p>{file ? file.name : "Photo copied from the source. Choose a file above to replace it."}</p></div>}
       {fileError && <p role="alert" className="form-status">{fileError}</p>}
     </div>}
-    <label htmlFor="scene">{mode === "photo" ? "Add context (optional)" : "Describe what’s in the image"}</label>
-    <p id="scene-help" className="field-help">{mode === "photo" ? "Tell the AI anything the photo doesn’t explain. It will also look at the photo." : "What would we see? Be specific about the moment, objects, or setting."}</p>
+    <label htmlFor="scene">{mode === "photo" ? "Add context (optional)" : "Describe the image you want AI to create"}</label>
+    <p id="scene-help" className="field-help">{mode === "photo" ? "Tell the AI anything the photo doesn’t explain. It will also look at the photo." : "AI will generate an actual image from this description, then write a caption for it. Describe the subject, setting, and visual style."}</p>
     <textarea id="scene" name="scene" value={scene} onChange={event => setScene(event.target.value)} required={mode === "scene"} minLength={mode === "scene" ? 12 : undefined} maxLength={400} rows={mode === "photo" ? 3 : 4} placeholder={mode === "photo" ? "For example: This was supposed to be a quick coffee break…" : "A pigeon guarding the last empty bench outside the library…"} disabled={pending} aria-describedby="scene-help"/>
     <div className="field-meta"><button type="button" className="text-button" disabled={pending} onClick={() => { setMode("scene"); setScene(dailyScene); }}>Use today’s idea</button><span>{scene.length}/400</span></div>
     <label htmlFor="direction" className="direction-label">2 / What should the caption be like?</label>
@@ -48,9 +48,9 @@ export function GenerationForm({ dailyScene, initialScene, initialDirection, ini
     <div className="field-meta"><span>You direct it. AI writes it.</span><span>{direction.length}/300</span></div>
     {sourceId && <input type="hidden" name="source_id" value={sourceId}/>}
     <p className="publish-note">Your photo, image description, caption instructions, and AI caption will appear in the public feed. Leave out personal details and only upload photos you can share.</p>
-    <button className="primary-button" disabled={pending || !canSubmit}>{pending ? "Writing your caption…" : "3 / Generate & publish ↗"}</button>
+    <button className="primary-button" disabled={pending || !canSubmit}>{pending ? mode === "scene" ? "Creating your image and caption…" : "Writing your caption…" : mode === "scene" ? "Generate image + caption ↗" : "Caption photo & publish ↗"}</button>
     <p className="field-help">10 attempts per day, resetting at midnight New York time. Backup AIs are tried automatically within the same attempt.</p>
-    <p role={state.error ? "alert" : "status"} className="form-status">{state.error || (pending ? "Looking for the punchline. If an AI is busy, we’ll try a backup. This can take up to 45 seconds." : "")}</p>
+    <p role={state.error ? "alert" : "status"} className="form-status">{state.error || (pending ? mode === "scene" ? "First we draw your image, then write its caption and publish both. This can take up to two minutes." : "Looking for the punchline. If an AI is busy, we’ll try a backup. This can take up to 45 seconds." : "")}</p>
     {sourceId && <Link href="/create" className="start-over">Start with a new idea instead ↗</Link>}
   </form>;
 }

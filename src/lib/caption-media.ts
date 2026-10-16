@@ -25,6 +25,6 @@ export async function withCaptionMedia(captions: Caption[]): Promise<Caption[]> 
   }
   return captions.map(caption => {
     const brief = briefs.get(caption.id);
-    return { ...caption, input_scene: brief?.scene, caption_instructions: brief?.direction || undefined, photo_url: brief?.photoPath ? urls.get(brief.photoPath) : undefined, source_caption_id: brief?.sourceId };
+    return { ...caption, input_scene: brief?.scene, caption_instructions: brief?.direction || undefined, photo_url: brief?.photoPath ? urls.get(brief.photoPath) : undefined, source_caption_id: brief?.sourceId, image_origin: brief?.imageOrigin };
   });
 }
