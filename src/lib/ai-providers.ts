@@ -51,7 +51,8 @@ export async function generateWithFallback(input: CaptionInput, options: { env: 
           contents: [{ role: "user", parts: [{ text: prompt }, ...(input.photo ? [{ inlineData: { mimeType: input.photo.mimeType, data: input.photo.data } }] : [])] }],
           generationConfig: { temperature: 1, maxOutputTokens: 2048, responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { caption: { type: "STRING" }, scene: { type: "STRING" } }, required: ["caption", "scene"] } },
         } : {
-          model: provider.model, temperature: 1, max_tokens: provider.name === "Cloudflare" ? 1024 : 2048,
+          model: provider.model, temperature: 1, max_tokens: 2048,
+          ...(provider.name === "Cloudflare" && provider.model.includes("gemma-4") ? { chat_template_kwargs: { enable_thinking: false } } : {}),
           ...(provider.name === "Groq" && provider.model.includes("gpt-oss") ? { reasoning_effort: "low" } : {}),
           messages: [{ role: "system", content: captionSystemPrompt }, { role: "user", content: input.photo ? [{ type: "text", text: prompt }, { type: "image_url", image_url: { url: `data:${input.photo.mimeType};base64,${input.photo.data}` } }] : prompt }],
           ...(!provider.plainJson ? { response_format: provider.name === "OpenRouter" ? { type: "json_object" } : { type: "json_schema", json_schema: { name: "caption", strict: true, schema } } } : {}),
@@ -75,11 +76,13 @@ export async function generateWithFallback(input: CaptionInput, options: { env: 
       } else {
         const choice = result.choices?.[0];
         if (choice?.message?.refusal || choice?.finish_reason === "content_filter") throw new GenerationError("blocked", provider.name);
-        if (choice?.finish_reason !== "stop" || typeof choice.message?.content !== "string") throw new GenerationError("invalid", provider.name);
-        text = choice.message.content;
+        if (choice?.finish_reason !== "stop") throw new GenerationError("invalid", provider.name, undefined, `finish_${choice?.finish_reason || "missing"}`);
+        if (provider.name === "Cloudflare" && choice.message?.content && typeof choice.message.content === "object") text = JSON.stringify(choice.message.content);
+        else if (typeof choice.message?.content === "string") text = choice.message.content;
+        else throw new GenerationError("invalid", provider.name, undefined, "missing_content");
       }
       try { return { ...parseCaptionResult(text, input), prompt, model: `${provider.name}/${provider.model}` }; }
-      catch { throw new GenerationError("invalid", provider.name); }
+      catch (error) { throw new GenerationError("invalid", provider.name, undefined, error instanceof SyntaxError ? "invalid_json" : error instanceof Error ? error.message.replace(/\s+/g, "_") : "invalid_fields"); }
     } catch (error) {
       const failure = error instanceof GenerationError ? error : new GenerationError("unavailable", provider.name, undefined, error instanceof Error ? error.name : undefined);
       if (failure.kind === "blocked") throw failure;
