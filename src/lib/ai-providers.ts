@@ -19,7 +19,7 @@ export function providerPlan(env: Env, photo: boolean): Provider[] {
     for (const model of models) if (/^[a-zA-Z0-9.-]+$/.test(model)) plan.push({ name: "Gemini", model, key: env.GEMINI_API_KEY, url: `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, gemini: true });
   }
   if (env.GROQ_API_KEY) plan.push({ name: "Groq", model: (photo ? env.GROQ_VISION_MODEL : env.GROQ_MODEL) || (photo ? "qwen/qwen3.8-27b" : "openai/gpt-oss-20b"), key: env.GROQ_API_KEY, url: "https://api.groq.com/openai/v1/chat/completions" });
-  if (env.CLOUDFLARE_API_TOKEN && /^[a-f0-9]{32}$/i.test(env.CLOUDFLARE_ACCOUNT_ID || "")) plan.push({ name: "Cloudflare", model: env.CLOUDFLARE_CAPTION_MODEL || "@cf/meta/llama-4-scout-17b-16e-instruct", key: env.CLOUDFLARE_API_TOKEN, url: `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/ai/v1/chat/completions` });
+  if (env.CLOUDFLARE_API_TOKEN && /^[a-f0-9]{32}$/i.test(env.CLOUDFLARE_ACCOUNT_ID || "")) plan.push({ name: "Cloudflare", model: env.CLOUDFLARE_CAPTION_MODEL || "@cf/google/gemma-4-26b-a4b-it", key: env.CLOUDFLARE_API_TOKEN, url: `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/ai/v1/chat/completions` });
   if (env.OPENROUTER_API_KEY) plan.push({ name: "OpenRouter", model: env.OPENROUTER_MODEL || "openrouter/free", key: env.OPENROUTER_API_KEY, url: "https://openrouter.ai/api/v1/chat/completions" });
   const gatewayKey = env.AI_GATEWAY_API_KEY || env.VERCEL_OIDC_TOKEN;
   if (gatewayKey) plan.push({ name: "AI Gateway", model: env.AI_GATEWAY_MODEL || "google/gemini-2.5-flash-lite", key: gatewayKey, url: "https://ai-gateway.vercel.sh/v1/chat/completions" });
@@ -51,10 +51,10 @@ export async function generateWithFallback(input: CaptionInput, options: { env: 
           contents: [{ role: "user", parts: [{ text: prompt }, ...(input.photo ? [{ inlineData: { mimeType: input.photo.mimeType, data: input.photo.data } }] : [])] }],
           generationConfig: { temperature: 1, maxOutputTokens: 2048, responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { caption: { type: "STRING" }, scene: { type: "STRING" } }, required: ["caption", "scene"] } },
         } : {
-          model: provider.model, temperature: 1, max_tokens: 2048,
+          model: provider.model, temperature: 1, max_tokens: provider.name === "Cloudflare" ? 1024 : 2048,
           ...(provider.name === "Groq" && provider.model.includes("gpt-oss") ? { reasoning_effort: "low" } : {}),
           messages: [{ role: "system", content: captionSystemPrompt }, { role: "user", content: input.photo ? [{ type: "text", text: prompt }, { type: "image_url", image_url: { url: `data:${input.photo.mimeType};base64,${input.photo.data}` } }] : prompt }],
-          ...(!provider.plainJson ? { response_format: provider.name === "OpenRouter" || (provider.name === "Groq" && !!input.photo) ? { type: "json_object" } : { type: "json_schema", json_schema: { name: "caption", strict: true, schema } } } : {}),
+          ...(!provider.plainJson ? { response_format: provider.name === "OpenRouter" ? { type: "json_object" } : { type: "json_schema", json_schema: { name: "caption", strict: true, schema } } } : {}),
         }),
       });
       if (!response.ok) {

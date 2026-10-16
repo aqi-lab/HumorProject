@@ -30,6 +30,8 @@ test("photo fallbacks send image data to a vision model and preserve context", a
     return success("A pigeon guards a wooden bench outside a library.");
   } });
   assert.match(calls[1].model, /qwen/);
+  assert.equal(calls[1].response_format.type, "json_schema");
+  assert.equal(calls[1].response_format.json_schema.strict, true);
   assert.match(calls[1].messages[1].content[1].image_url.url, /^data:image\/webp;base64,/);
   assert.equal(result.scene, "A pigeon guards a wooden bench outside a library.");
 });
@@ -43,7 +45,7 @@ test("Groq request rejection uses Cloudflare vision before unavailable Gemini ba
     return success("A pigeon guards a wooden bench outside a library.");
   } });
   assert.equal(calls.length, 2); assert.match(calls[1].url, /api.cloudflare.com/);
-  assert.match(calls[1].body.model, /llama-4-scout/);
+  assert.match(calls[1].body.model, /gemma-4/);
   assert.match(calls[1].body.messages[1].content[1].image_url.url, /^data:image\/webp;base64,/);
   assert.equal(calls[1].body.response_format.type, "json_schema");
   assert.match(result.model, /^Cloudflare/);
