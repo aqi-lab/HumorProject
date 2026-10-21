@@ -1,5 +1,13 @@
 # Humor Project — Hello World
 
+## Week 6: Admin panel
+
+The separate admin application lives in the local `admin-panel/` checkout and the private [HumorAdmin repository](https://github.com/aqi-lab/HumorAdmin). Its Vercel project is `humor-admin`, with the permanent address [humor-admin-six.vercel.app](https://humor-admin-six.vercel.app). It shares this app's Supabase database and adds a dashboard, read-only profiles and ratings, and AI media creation, editing, image replacement, and deletion.
+
+Every admin data operation verifies a Google OAuth session and the current `profiles.is_superadmin` database flag. The Week 6 migration protects the flag from regular users. Initial access is granted through trusted database tooling, never a public app route. See the admin repository's README for setup, verification, and the bootstrap SQL. This application's creation, voting, collection, and feedback changes remain available.
+
+For submission, use the immutable deployment addresses for both projects, rather than the permanent aliases above.
+
 A simple Next.js app for the Week 1 assignment in Designing for GenAI.
 
 ## Run locally

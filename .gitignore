@@ -41,3 +41,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Week 6 is a standalone repository and Vercel project.
+/admin-panel/
